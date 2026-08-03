@@ -1,0 +1,50 @@
+.alura-helper-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  cursor: help;
+  vertical-align: middle;
+}
+
+.alura-helper-badge--spam {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+.alura-helper-badge--category {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+}
+
+.alura-helper-badge--duplicate {
+  background: #ede9fe;
+  color: #5b21b6;
+  border: 1px solid #c4b5fd;
+}
+
+.alura-helper-badge--old {
+  background: #e0f2fe;
+  color: #075985;
+  border: 1px solid #7dd3fc;
+}
+
+.alura-helper-row--old {
+  border-left: 3px solid #7dd3fc;
+}
+
+.alura-helper-summary {
+  padding: 8px 14px;
+  margin-bottom: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 12px;
+  color: #475569;
+}

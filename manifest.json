@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Alura Sugestões Helper",
+  "version": "0.4.0",
+  "description": "Sinaliza possível spam, categoria divergente, texto repetido e sugestões antigas na página de moderação de sugestões da Alura.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://cursos.alura.com.br/suggestions*"],
+      "js": [
+        "src/common/selectors.js",
+        "src/common/spam-detector.js",
+        "src/common/category-checker.js",
+        "src/common/duplicate-checker.js",
+        "src/list-page.js"
+      ],
+      "css": ["src/styles.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}

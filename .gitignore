@@ -1,0 +1,17 @@
+# Configuração local do Claude Code (pessoal, não deve ser compartilhada)
+.claude/settings.local.json
+
+# Sistema operacional
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+
+# Pacote gerado para a Chrome Web Store (ver README)
+*.zip
+
+# Caso ferramentas de build/lint sejam adicionadas no futuro
+node_modules/
