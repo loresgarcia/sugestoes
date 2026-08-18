@@ -1,5 +1,5 @@
-# Configuração local do Claude Code (pessoal, não deve ser compartilhada)
-.claude/settings.local.json
+# Configurações do Claude Code (locais, não devem ser compartilhadas)
+.claude/
 
 # Sistema operacional
 Thumbs.db
