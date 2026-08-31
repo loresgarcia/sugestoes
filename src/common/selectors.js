@@ -3,18 +3,24 @@
  * Se a Alura mudar o layout, é aqui que se ajusta primeiro — ver README
  * para o passo a passo de recalibração usando o DevTools.
  *
- * Confirmado via inspeção manual da página real:
+ * Estrutura DOM confirmada via HTML real (cursos.alura.com.br/suggestions):
  *
  * li.suggestions-item
  * ├── div.suggestions-requestInfo
  * │   └── a.suggestions-requestInfo-link
+ * │       ├── img.suggestions-avatar
  * │       └── div.suggestions-requestInfo-user
+ * │           ├── p.suggestions-requestInfo-user-name
  * │           └── p > time.suggestions-requestInfo-user-requestDate
- * └── div.suggestions-requestSubject
- *     └── a.suggestions-requestSubject-link
- *         ├── p.suggestions-requestSubject-title
- *         ├── p.suggestions-requestSubject-description
- *         └── p.suggestions-kind
+ * ├── div.suggestions-requestSubject
+ * │   └── a.suggestions-requestSubject-link (href="/suggestions/{id}?backToPage={page}&kind=")
+ * │       ├── p.suggestions-requestSubject-title > strong
+ * │       ├── p.suggestions-requestSubject-description
+ * │       └── p.suggestions-kind
+ * ├── div.suggestions-requestDiff
+ * │   └── ul.suggestions-requestDiff-list
+ * │       └── li.suggestions-requestDiff-item[.suggestions-requestDiff-item-red|.suggestions-requestDiff-item-green]
+ * └── input.suggestion-discarded-checkbox[data-suggestion-id="{id}"]
  */
 const AluraSelectors = (() => {
   function textOf(el) {
@@ -25,15 +31,78 @@ const AluraSelectors = (() => {
     return Array.from(document.querySelectorAll("li.suggestions-item"));
   }
 
+  /**
+   * ID numérico da sugestão, extraído de data-suggestion-id no checkbox.
+   * Preferencial para deduplicação — mais confiável que hash de texto.
+   */
+  function getRowSourceId(row) {
+    const checkbox = row.querySelector("input.suggestion-discarded-checkbox[data-suggestion-id]");
+    if (checkbox) {
+      const id = checkbox.getAttribute("data-suggestion-id");
+      if (id) return id;
+    }
+    const link = row.querySelector("a.suggestions-requestSubject-link");
+    if (link) {
+      const href = link.getAttribute("href") || "";
+      const match = href.match(/\/suggestions\/(\d+)/);
+      if (match) return match[1];
+    }
+    return null;
+  }
+
+  /** URL absoluta da sugestão (para abrir na Alura). */
+  function getRowLinkHref(row) {
+    const link = row.querySelector("a.suggestions-requestSubject-link");
+    if (!link) return window.location.href;
+    return link.href;
+  }
+
   function getRowDescription(row) {
     const el = row.querySelector(".suggestions-requestSubject-description");
     if (!el) return "";
     return textOf(el).replace(/^Descrição:\s*/, "");
   }
 
+  /** Título do curso + atividade (ex.: "Enunciado da atividade do curso Java: ..."). */
+  function getRowTitle(row) {
+    const el = row.querySelector(".suggestions-requestSubject-title");
+    return el ? textOf(el) : "";
+  }
+
   function getRowCategory(row) {
     const el = row.querySelector(".suggestions-kind");
     return el ? textOf(el) : null;
+  }
+
+  /** Nome do autor da sugestão (pode ser null se a conta for privada). */
+  function getRowAuthor(row) {
+    const el = row.querySelector(".suggestions-requestInfo-user-name");
+    return el ? textOf(el) : null;
+  }
+
+  /**
+   * Informações de diff da listagem (visível na listagem, sem abrir detalhe).
+   * Retorna { total: number, additions: number, deletions: number } ou null.
+   * Ex.: "-55" → { total: -55, additions: 0, deletions: 55 }
+   *      "+11" → { total: 11, additions: 11, deletions: 0 }
+   */
+  function getRowDiffInfo(row) {
+    const items = row.querySelectorAll(".suggestions-requestDiff-item");
+    if (!items.length) return null;
+    let total = 0;
+    let additions = 0;
+    let deletions = 0;
+    items.forEach((item) => {
+      const num = parseInt(textOf(item), 10);
+      if (Number.isNaN(num)) return;
+      total += num;
+      if (item.classList.contains("suggestions-requestDiff-item-green")) {
+        additions += Math.abs(num);
+      } else if (item.classList.contains("suggestions-requestDiff-item-red")) {
+        deletions += Math.abs(num);
+      }
+    });
+    return { total, additions, deletions };
   }
 
   const RELATIVE_UNIT_MS = {
@@ -76,5 +145,22 @@ const AluraSelectors = (() => {
     return relativeMs != null ? Date.now() - relativeMs : null;
   }
 
-  return { findSuggestionRows, getRowDescription, getRowCategory, getRowTimestamp };
+  /** Número da página atual, extraído do parâmetro backToPage na URL. */
+  function getPageNumber() {
+    const match = window.location.search.match(/backToPage=(\d+)/);
+    return match ? parseInt(match[1], 10) : 1;
+  }
+
+  return {
+    findSuggestionRows,
+    getRowSourceId,
+    getRowLinkHref,
+    getRowDescription,
+    getRowTitle,
+    getRowCategory,
+    getRowAuthor,
+    getRowDiffInfo,
+    getRowTimestamp,
+    getPageNumber,
+  };
 })();
