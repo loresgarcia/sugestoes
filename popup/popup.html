@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alura Sugestoes Helper</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <header class="popup-header">
+      <h1 class="popup-title">Alura Sugestoes</h1>
+      <button id="btn-reprocess" class="btn btn-secondary" title="Reprocessar pagina atual">
+        &#x21BB; Reprocessar
+      </button>
+    </header>
+
+    <div id="stats-bar" class="stats-bar">
+      <span class="stat" id="stat-total">0 sugestoes</span>
+      <span class="stat stat--spam" id="stat-spam">0 spam</span>
+      <span class="stat stat--category" id="stat-category">0 categoria</span>
+      <span class="stat stat--duplicate" id="stat-duplicate">0 repetido</span>
+      <span class="stat stat--old" id="stat-old">0 antiga</span>
+    </div>
+
+    <div class="filters">
+      <select id="filter-label" class="filter-select">
+        <option value="">Todos os labels</option>
+        <option value="alta prioridade">Alta prioridade</option>
+        <option value="revisar">Revisar</option>
+        <option value="atencao">Atencao</option>
+        <option value="normal">Normal</option>
+      </select>
+      <select id="filter-category" class="filter-select">
+        <option value="">Todas as categorias</option>
+        <option value="Correcao ortografica">Correcao ortografica</option>
+        <option value="Correcao tecnica">Correcao tecnica</option>
+        <option value="Problema com audio ou video">Audio/Video</option>
+        <option value="Link quebrado">Link quebrado</option>
+      </select>
+      <select id="filter-flag" class="filter-select">
+        <option value="">Todas as flags</option>
+        <option value="spam">Spam</option>
+        <option value="category_mismatch">Categoria errada</option>
+        <option value="duplicate">Texto repetido</option>
+        <option value="old">Antiga</option>
+      </select>
+    </div>
+
+    <div id="suggestion-list" class="suggestion-list">
+      <p class="empty-state">Nenhuma sugestao processada ainda.</p>
+    </div>
+
+    <footer class="popup-footer">
+      <span id="filtered-count"></span>
+      <button id="btn-clear" class="btn btn-danger">Limpar dados</button>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
