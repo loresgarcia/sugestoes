@@ -1,12 +1,24 @@
 {
   "manifest_version": 3,
-  "name": "Alura Sugestões Helper",
-  "version": "0.4.0",
-  "description": "Sinaliza possível spam, categoria divergente, texto repetido e sugestões antigas na página de moderação de sugestões da Alura.",
+  "name": "Alura Sugestoes Helper",
+  "version": "0.5.0",
+  "description": "Sinaliza possivel spam, categoria divergente, texto repetido e sugestoes antigas na pagina de moderacao de sugestoes da Alura.",
+  "permissions": ["storage"],
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png"
+    },
+    "default_title": "Alura Sugestoes Helper"
+  },
+  "background": {
+    "service_worker": "background/service-worker.js"
   },
   "content_scripts": [
     {
@@ -16,6 +28,11 @@
         "src/common/spam-detector.js",
         "src/common/category-checker.js",
         "src/common/duplicate-checker.js",
+        "src/common/storage.js",
+        "src/common/triage.js",
+        "src/content/observer.js",
+        "src/content/parser.js",
+        "src/content/injector.js",
         "src/list-page.js"
       ],
       "css": ["src/styles.css"],
