@@ -1,73 +1,118 @@
-# Alura Sugestões Helper
+# Alura Sugestoes Helper
 
-Extensão Chrome (Manifest V3) para a área de suporte educacional identificar
-mais rápido spam, sugestões mal categorizadas, texto repetido e sugestões
-esquecidas na página de sugestões da Alura
-(`cursos.alura.com.br/suggestions/...`). Só sinaliza — não aprova, não
-reprova, não descarta nada sozinha. As ações continuam manuais, usando os
-próprios controles da Alura (Aprovar/Reprovar na página de detalhe,
-Descartar em lote na listagem).
+Extensao Chrome (Manifest V3) para a area de suporte educacional identificar mais rapido spam, categorias possivelmente erradas, texto repetido e sugestoes antigas na pagina de sugestoes da Alura (`cursos.alura.com.br/suggestions/...`). A extensao apenas sinaliza — nao aprova, nao reprova e nao descarta nada automaticamente. As acoes continuam manuais usando os controles da Alura (Aprovar/Reprovar na pagina de detalhe, Descartar em lote na listagem).
 
-## O que ela faz
+## O que a extensao faz
 
-- **Selo "🚩 Possível spam"**: analisa a descrição de cada sugestão e
-  sinaliza quando o texto bate com padrões suspeitos — texto muito curto,
-  frases genéricas ("teste", "kkkk"), padrão de teclado repetido
-  (`asdasdasd`), poucas letras distintas para o tamanho do texto
-  (`kskdaskdkakdskakda`), ou uma "palavra" isolada sem sentido no meio de uma
-  frase normal.
-- **Selo "🏷️ Categoria pode estar errada"**: quando a descrição menciona
-  fortemente link quebrado (ex.: "404", "link não abre") ou problema de
-  áudio/vídeo (ex.: "tela preta", "sem som") mas a categoria marcada pelo
-  aluno é outra. Cobre só essas duas categorias — "Correção técnica" e
-  "Correção ortográfica" são amplas demais pra detectar por palavra-chave
-  sem gerar falso positivo (ver
-  [src/common/category-checker.js](src/common/category-checker.js)).
-- **Selo "🔁 Texto repetido"**: quando a descrição é quase idêntica à de
-  outra sugestão **nesta mesma página** — pega spam repetido ou um aluno
-  copiando a mesma reclamação em mais de uma atividade. Não tenta detectar
-  "mesmo problema com palavras diferentes" (ver limitações abaixo).
-- **Selo "⏳ Aguardando há muito tempo" + destaque na linha**: sugestões
-  criadas há mais de 7 dias (ajustável) ganham uma borda colorida e um selo,
-  sem mudar a posição delas na lista.
-- **Resumo no topo da lista**: contagem rápida tipo "18 sugestões nesta
-  página · 3 possível spam · 1 com categoria talvez errada · 2 com texto
-  repetido · 4 aguardando há mais de 7 dias", pra ter uma visão geral antes
-  de entrar item por item.
-- Passe o mouse sobre qualquer selo pra ver o motivo da sinalização.
+A extensao observa a listagem de sugestoes e insere badges informativos ao lado de cada card, alem de um resumo geral no topo da lista. Passe o mouse sobre qualquer selo para ver o motivo da sinalizacao.
+
+- **Selo "Possivel spam"**: Analisa a descricao visivel do card e marca quando o texto combina com padroes suspeitos: texto muito curto, frases genericas conhecidas ("teste", "kkkk"), padroes de teclado repetidos ("asdasdasd"), poucas letras distintas para o tamanho do texto, sequencias longas de consoantes, baixa proporcao de vogais, ou uma "palavra" isolada sem sentido no meio de uma frase normal.
+
+- **Selo "Categoria pode estar errada"**: Quando a descricao aponta fortemente para um tipo diferente da categoria marcada pelo aluno. No momento, cobre apenas dois padroes de vocabulario distintivos: "Link quebrado" e "Problema com audio ou video".
+
+- **Selo "Texto repetido"**: Quando a descricao e quase identica a de outra sugestao na mesma pagina. Essa regra captura spam repetido ou um aluno copiando a mesma reclamacao em mais de uma atividade.
+
+- **Selo "Aguardando ha muito tempo" + destaque na linha**: Sugestoes criadas ha mais de 7 dias (configuravel) ganham uma borda diferenciada e um selo.
+
+- **Resumo no topo da lista**: Exibe uma contagem consolidada, por exemplo: `18 sugestoes nesta pagina · 3 possivel spam · 1 com categoria talvez errada · 2 com texto repetido · 4 aguardando ha mais de 7 dias`.
+
+- **Popup com lista filtrable**: Clique no icone da extensao para ver uma lista consolidada de todas as sugestoes ja processadas, com filtros por label, categoria e flag.
+
+## Como funciona (arquitetura)
+
+A extensao roda como um content script injetado automaticamente no dominio da Alura. Fluxo:
+
+1. **Observer** (`src/content/observer.js`) detecta cards renderizados via `MutationObserver` com debounce.
+2. **Parser** (`src/content/parser.js`) extrai sourceId, descricao, categoria, autor, diff e timestamp de cada card usando selectors.
+3. **Triage** (`src/common/triage.js`) consolida spam, categoria, duplicatas e idade em um score unico (0-100), label e flags.
+4. **Storage** (`src/common/storage.js`) persiste cada sugestao em `chrome.storage.local` por sourceId (deduplicacao robusta).
+5. **Injector** (`src/content/injector.js`) injeta badges visuais no DOM ao lado de cada card.
+6. **Popup** (`popup/`) le o storage e exibe lista filtrable/ordenavel.
+7. **Service Worker** (`background/service-worker.js`) mantem contadores e atualiza badge do icone.
+
+### Estrutura de arquivos
+
+```
+manifest.json                       # Manifest V3, permissions, background, popup
+background/
+  service-worker.js                 # Mensageria, contadores, badge do icone
+popup/
+  popup.html                        # Interface do popup
+  popup.js                          # Logica do popup (filtros, lista)
+  popup.css                         # Estilos do popup
+src/
+  list-page.js                      # Orquestracao: observer -> parser -> triage -> storage -> injector
+  styles.css                        # Estilos dos badges e resumo na pagina
+  common/
+    selectors.js                    # Seletores CSS da listagem (sourceId, autor, diff, etc.)
+    spam-detector.js                # Heuristicas de spam (scores, limiares, motivos)
+    category-checker.js             # Divergencia entre descricao e categoria
+    duplicate-checker.js            # Descricoes identicas (similaridade de Jaccard)
+    storage.js                      # Wrapper chrome.storage.local (upsert, getAll, getFiltered)
+    triage.js                       # Scoring unificado (pesos: spam 40, categoria 25, duplicata 20, antigo 15)
+  content/
+    observer.js                     # MutationObserver isolado com debounce
+    parser.js                       # Extrai modelo Suggestion do DOM
+    injector.js                     # Injeta badges e resumo no DOM
+```
 
 ## Instalar localmente (modo desenvolvedor)
 
 1. Abra `chrome://extensions` no Chrome.
-2. Ative "Modo do desenvolvedor" (canto superior direito).
-3. Clique em "Carregar sem compactação" (Load unpacked) e selecione a pasta
-   `sugestoes` (a que tem o `manifest.json`).
-4. Abra a página de sugestões logado normalmente — os selos devem aparecer
-   nas sugestões suspeitas.
+2. Ative **"Modo do desenvolvedor"** (canto superior direito).
+3. Clique em **"Carregar sem compactacao"** (Load unpacked) e selecione a pasta raiz do projeto (onde esta o `manifest.json`).
+4. Abra a pagina de sugestoes da Alura logado normalmente — os badges devem aparecer ao lado dos cards.
+5. Clique no icone da extensao na barra de ferramentas para abrir o popup.
 
-Depois de qualquer mudança nos arquivos, clique no ícone de recarregar (⟳)
-no card da extensão em `chrome://extensions` e dê F5 na página.
+Apos qualquer alteracao nos arquivos, clique no icone de recarregar (⟳) no card da extensao em `chrome://extensions` e recarregue (F5) a pagina de sugestoes.
 
-## Seletores
+## Testar
 
-Os seletores em [src/common/selectors.js](src/common/selectors.js) usam as
-classes reais da listagem, confirmadas por inspeção manual. Se a Alura
-redesenhar a tela e os selos pararem de aparecer, abra o DevTools (F12),
-clique com o botão direito no elemento em questão → **Inspecionar**, e me
-mande o HTML (botão direito no elemento no painel do DevTools → Copy → Copy
-outerHTML). Ajusto o `selectors.js` com base nisso.
+- **Content script**: Abra a pagina de sugestoes, pressione F12, aba Console. Veja logs e erros do content script.
+- **Service worker**: Em `chrome://extensions`, clique em "Service Worker" na secao de detalhes da extensao.
+- **Popup**: Clique no icone da extensao na barra de ferramentas.
+- **Storage**: No Console da pagina de sugestoes, execute `AluraStorage.getStats()` para ver contagem de sugestoes salvas.
+- **Triagem**: No Console, execute `AluraTriage.triage({ description: "teste", category: null, timestamp: null, duplicateCount: 0 })` para testar.
 
 ## Ajustar a sensibilidade
 
-- Spam: constante `THRESHOLD` no topo de
-  [src/common/spam-detector.js](src/common/spam-detector.js) (padrão: 45) —
-  se estiver sinalizando demais ou de menos, é só esse número que muda o
-  comportamento. Cada heurística individual também tem seu próprio peso.
-- Categoria: as listas `LINK_QUEBRADO_PHRASES` e `AUDIO_VIDEO_PHRASES` em
-  [src/common/category-checker.js](src/common/category-checker.js) — dá pra
-  adicionar frases novas se perceber um padrão comum passando batido.
-- Texto repetido: constante `SIMILARITY_THRESHOLD` em
-  [src/common/duplicate-checker.js](src/common/duplicate-checker.js)
-  (padrão: 0.75 — bem alto de propósito, ver limitações abaixo).
-- Sugestão antiga: constante `OLD_THRESHOLD_DAYS` no topo de
-  [src/list-page.js](src/list-page.js) (padrão: 7 dias).
+| Regra | Constante | Arquivo | Padrao | Observacoes |
+|---|---|---|---|---|
+| Spam | `THRESHOLD` | `src/common/spam-detector.js` | 45 | Limiar global. Cada heuristica tem peso interno. |
+| Spam (triage) | `WEIGHTS.spam` | `src/common/triage.js` | 40 | Peso do spam no score consolidado (0-100). |
+| Categoria | `LINK_QUEBRADO_PHRASES` / `AUDIO_VIDEO_PHRASES` | `src/common/category-checker.js` | — | Listas de frases-chave. |
+| Categoria (triage) | `WEIGHTS.categoryMismatch` | `src/common/triage.js` | 25 | Peso da categoria no score consolidado. |
+| Texto repetido | `SIMILARITY_THRESHOLD` | `src/common/duplicate-checker.js` | 0.75 | Similaridade de Jaccard (alto de proposito). |
+| Texto repetido (triage) | `WEIGHTS.duplicate` | `src/common/triage.js` | 20 | Peso da duplicata no score consolidado. |
+| Sugestao antiga | `OLD_THRESHOLD_DAYS` | `src/common/triage.js` | 7 | Dias minimos para selo. |
+| Sugestao antiga (triage) | `WEIGHTS.old` | `src/common/triage.js` | 15 | Peso de "antigo" no score consolidado. |
+
+### Labels de triagem
+
+| Label | Score minimo | Significado |
+|---|---|---|
+| alta prioridade | 70+ | Requer atencao imediata |
+| revisar | 40-69 | Deve ser revisado em breve |
+| atencao | 1-39 | Tem algum indicador, mas nao e critico |
+| normal | 0 | Sem problemas detectados |
+
+## Solucao de problemas
+
+Se a Alura redesenhar a pagina e os badges pararem de aparecer, o ponto de ajuste principal sao os seletores CSS em `src/common/selectors.js`. Para diagnosticar:
+
+1. Abra o DevTools (F12) na pagina de sugestoes.
+2. Clique com o botao direito em um card de sugestao → **Inspecionar**.
+3. No painel do DevTools, botao direito no elemento inspecionado → **Copy** → **Copy outerHTML**.
+4. Envie o HTML copiado para que os seletores sejam recalibrados.
+
+Para encontrar o Service Worker: em `chrome://extensions`, clique em **"Service Worker"** na secao de detalhes. Isso abre o DevTools do background.
+
+Para ver logs do content script: F12 → aba Console na pagina de sugestoes.
+
+## Limitacoes
+
+- **Duplicatas somente na mesma pagina**: a comparacao de similaridade e local — nao cruza dados entre diferentes carregamentos ou paginas.
+- **Categorias parcialmente mapeadas**: apenas "Link quebrado" e "Problema com audio ou video" tem vocabulario suficientemente distinto para deteccao por palavra-chave segura.
+- **Sem diff na listagem**: o diff lado a lado de correcoes ortograficas so esta disponivel na visao de detalhe da Alura; a extensao, por ora, nao o processa.
+- **Atraso de renderizacao**: como depende de `MutationObserver`, pode haver um breve intervalo entre o carregamento dos cards e a injecao dos badges.
+- **Service worker descartavel**: o Chrome descarta o service worker apos ~30s de inatividade. Ele reativa automaticamente ao clicar no popup ou receber uma mensagem.
