@@ -13,8 +13,12 @@
  *   - AluraObserver     (src/content/observer.js)
  *   - AluraParser       (src/content/parser.js)
  *   - AluraInjector     (src/content/injector.js)
+ *   - AluraIdentity     (src/common/identity.js)
+ *   - AluraPresenceBadge (src/content/presence-badge.js)
  */
 (function () {
+  let myClientId = null;
+
   /**
    * Processa um batch de rows: parse → duplicate count → triage → inject.
    */
@@ -55,9 +59,15 @@
     }
 
     AluraInjector.injectSummary(rows, stats);
+
+    if (myClientId) {
+      const sourceIds = suggestions.map((s) => s.sourceId);
+      AluraPresenceBadge.annotateRows(rows, sourceIds, myClientId);
+    }
   }
 
-  function start() {
+  async function start() {
+    myClientId = await AluraIdentity.getClientId();
     AluraObserver.start(processRows, { debounceMs: 200 });
   }
 

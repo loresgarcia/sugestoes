@@ -4,6 +4,7 @@
   "version": "0.5.0",
   "description": "Sinaliza possivel spam, categoria divergente, texto repetido e sugestoes antigas na pagina de moderacao de sugestoes da Alura.",
   "permissions": ["storage"],
+  "host_permissions": ["https://sugestoes-8bdff-default-rtdb.firebaseio.com/*"],
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
@@ -30,11 +31,15 @@
         "src/common/duplicate-checker.js",
         "src/common/storage.js",
         "src/common/triage.js",
+        "src/common/firebase-config.js",
+        "src/common/identity.js",
+        "src/common/presence.js",
         "src/content/observer.js",
         "src/content/parser.js",
         "src/content/detail-parser.js",
         "src/content/injector.js",
         "src/content/reply-buttons.js",
+        "src/content/presence-badge.js",
         "src/list-page.js",
         "src/detail-page.js"
       ],

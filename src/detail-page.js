@@ -9,11 +9,37 @@
  *   - AluraTriage       (src/common/triage.js)
  *   - AluraStorage      (src/common/storage.js)
  *   - AluraDetailParser (src/content/detail-parser.js)
+ *   - AluraIdentity     (src/common/identity.js)
+ *   - AluraPresence     (src/common/presence.js)
  */
 (function () {
+  function showOccupiedBanner(viewer) {
+    const wrapper = document.querySelector(".editorWrapper");
+    if (!wrapper) return;
+
+    const banner = document.createElement("div");
+    banner.className = "alura-presence-banner";
+    banner.textContent = `⚠️ ${viewer.nome} já está revisando esta sugestão agora.`;
+    wrapper.insertBefore(banner, wrapper.firstChild);
+  }
+
+  async function setupPresence(sourceId) {
+    const [nome, clientId] = await Promise.all([
+      AluraIdentity.getName(),
+      AluraIdentity.getClientId(),
+    ]);
+
+    const viewer = await AluraPresence.checkViewer(sourceId, clientId);
+    if (viewer) showOccupiedBanner(viewer);
+
+    AluraPresence.announce(sourceId, nome, clientId);
+  }
+
   async function processDetailPage() {
     const data = AluraDetailParser.parse();
     if (!data || !data.sourceId) return;
+
+    setupPresence(data.sourceId);
 
     const existing = await AluraStorage.getBySourceId(data.sourceId);
 

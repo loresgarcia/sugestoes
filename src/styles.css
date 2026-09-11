@@ -42,6 +42,24 @@
   border-left: 3px solid #7dd3fc;
 }
 
+.alura-presence-badge {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #94a3b8;
+}
+
+.alura-presence-banner {
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 6px;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #92400e;
+}
+
 .alura-helper-summary {
   padding: 8px 14px;
   margin-bottom: 10px;
