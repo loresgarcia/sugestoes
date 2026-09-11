@@ -151,6 +151,51 @@ const AluraSelectors = (() => {
     return match ? parseInt(match[1], 10) : 1;
   }
 
+  // ── Detail page selectors ──────────────────────────────────────────────
+
+  /** Detecta se estamos na página de detalhe de uma sugestão. */
+  function isDetailPage() {
+    return !!document.querySelector(".editorWrapper");
+  }
+
+  /** ID da sugestão, extraído do input hidden no formulário. */
+  function getDetailSourceId() {
+    const input = document.querySelector('.suggestion-forms input[name="id"][type="hidden"]');
+    return input ? input.value : null;
+  }
+
+  /** Texto completo sugerido pelo aluno (textarea .changed). */
+  function getDetailChangedText() {
+    const ta = document.querySelector("textarea.changed");
+    return ta ? ta.value.trim() : "";
+  }
+
+  /** Texto original antes da sugestão (textarea .original). */
+  function getDetailOriginalText() {
+    const ta = document.querySelector("textarea.original");
+    return ta ? ta.value.trim() : "";
+  }
+
+  /** Tipo/categoria da sugestão (ex.: "Correção ortográfica"). */
+  function getDetailCategory() {
+    const h3s = document.querySelectorAll("h3");
+    for (const h3 of h3s) {
+      const match = h3.textContent.match(/Tipo da sugest[aã]o:\s*(.+)/i);
+      if (match) return match[1].trim();
+    }
+    return null;
+  }
+
+  /** Nome do autor da sugestão na página de detalhe. */
+  function getDetailAuthor() {
+    const h3s = document.querySelectorAll("h3");
+    for (const h3 of h3s) {
+      const match = h3.textContent.match(/Criado por\s+(.+?)\s+em\s+/i);
+      if (match) return match[1].trim();
+    }
+    return null;
+  }
+
   return {
     findSuggestionRows,
     getRowSourceId,
@@ -162,5 +207,11 @@ const AluraSelectors = (() => {
     getRowDiffInfo,
     getRowTimestamp,
     getPageNumber,
+    isDetailPage,
+    getDetailSourceId,
+    getDetailChangedText,
+    getDetailOriginalText,
+    getDetailCategory,
+    getDetailAuthor,
   };
 })();

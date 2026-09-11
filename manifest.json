@@ -32,8 +32,11 @@
         "src/common/triage.js",
         "src/content/observer.js",
         "src/content/parser.js",
+        "src/content/detail-parser.js",
         "src/content/injector.js",
-        "src/list-page.js"
+        "src/content/reply-buttons.js",
+        "src/list-page.js",
+        "src/detail-page.js"
       ],
       "css": ["src/styles.css"],
       "run_at": "document_idle"

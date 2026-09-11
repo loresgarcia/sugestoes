@@ -52,3 +52,81 @@
   font-size: 12px;
   color: #475569;
 }
+
+/* ── Respostas Rápidas ─────────────────────────────────────────────────── */
+
+.alura-reply-panel {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.alura-reply-panel-header {
+  font-size: 13px;
+  font-weight: 700;
+  color: #166534;
+  margin-bottom: 8px;
+}
+
+.alura-reply-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.alura-reply-btn {
+  padding: 5px 12px;
+  border: 1px solid #86efac;
+  border-radius: 6px;
+  background: #fff;
+  color: #166534;
+  font-size: 12px;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+
+.alura-reply-btn:hover {
+  background: #dcfce7;
+  border-color: #22c55e;
+}
+
+.alura-reply-btn:active {
+  transform: scale(0.97);
+}
+
+.alura-reply-btn--copied {
+  background: #22c55e;
+  color: #fff;
+  border-color: #16a34a;
+}
+
+/* Toast */
+
+.alura-reply-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  padding: 8px 18px;
+  background: #1e293b;
+  color: #fff;
+  font-size: 13px;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-weight: 600;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  transition: opacity 0.25s, transform 0.25s;
+  z-index: 99999;
+  pointer-events: none;
+}
+
+.alura-reply-toast--visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}

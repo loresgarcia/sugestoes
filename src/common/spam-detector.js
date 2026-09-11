@@ -88,6 +88,69 @@ const AluraSpamDetector = (() => {
     return KNOWN_LOW_VALUE_PHRASES.includes(normalized);
   }
 
+  /**
+   * Detecta ruído de formatação Markdown introduzido por alunos nas sugestões.
+   * Cada padrão tem um peso baseado na confiança de que é ruído (e não conteúdo
+   * legítimo do texto original). Alta confiança = quase sempre spam. Média/baixa
+   * = contribui para o score cumulativo quando combinado com outros indicadores.
+   */
+  function scoreMarkdownNoise(text) {
+    const reasons = [];
+    let score = 0;
+
+    if (/\*{4,}/.test(text)) {
+      score += 35;
+      reasons.push("sequência de asteriscos (formatação Markdown)");
+    }
+
+    if (/[a-záéíóúãõâêôç]\*{2,}[a-záéíóúãõâêôç]/i.test(text)) {
+      score += 40;
+      reasons.push("asteriscos no interior de palavras");
+    }
+
+    if (/^\|.+\|$/m.test(text)) {
+      score += 35;
+      reasons.push("tabela Markdown");
+    }
+
+    if (/`{3}/.test(text)) {
+      score += 30;
+      reasons.push("bloco de código Markdown");
+    }
+
+    if (/^[-*_]{3,}$/m.test(text)) {
+      score += 30;
+      reasons.push("regra horizontal Markdown");
+    }
+
+    if (/\*\*[^*]+\*\*/.test(text)) {
+      score += 15;
+      reasons.push("formatação negrito");
+    }
+
+    if (/(?<!\*)\*[^*\s][^*]+\*(?!\*)/.test(text)) {
+      score += 15;
+      reasons.push("formatação itálico");
+    }
+
+    if (/^>\s+/m.test(text)) {
+      score += 15;
+      reasons.push("citação Markdown");
+    }
+
+    if (/\[[^\]]+\]\([^)]+\)/.test(text)) {
+      score += 15;
+      reasons.push("link Markdown");
+    }
+
+    if (/^#{1,6}\s+/m.test(text)) {
+      score += 10;
+      reasons.push("cabeçalho Markdown");
+    }
+
+    return { score: Math.min(score, 100), reasons };
+  }
+
   function scoreSpam(rawText) {
     const text = (rawText || "").trim();
     const reasons = [];
@@ -146,6 +209,12 @@ const AluraSpamDetector = (() => {
     if (text.length > 40 && !text.includes(" ")) {
       score += 20;
       reasons.push("texto longo sem espaços");
+    }
+
+    const mdResult = scoreMarkdownNoise(text);
+    if (mdResult.score > 0) {
+      score += mdResult.score;
+      reasons.push(...mdResult.reasons);
     }
 
     return { score: Math.min(score, 100), reasons };
