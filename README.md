@@ -18,6 +18,12 @@ A extensao observa a listagem de sugestoes e insere badges informativos ao lado 
 
 - **Popup com lista filtrable**: Clique no icone da extensao para ver uma lista consolidada de todas as sugestoes ja processadas, com filtros por label, categoria e flag.
 
+- **Reavaliacao na tela de detalhe**: Ao abrir uma sugestao, a extensao le o texto completo dos textareas (`.original` / `.changed`) e recalcula a triagem com o dado integral, em vez do texto truncado que aparece na listagem.
+
+- **Respostas rapidas**: Na tela de detalhe, um painel injetado acima do editor mostra botoes com respostas padrao (ortografia, tecnico, link quebrado, etc.). Clicar copia o texto pronto para a area de transferencia.
+
+- **Presenca de revisor**: Mostra quando outra pessoa ja esta revisando uma sugestao, para evitar que duas pessoas mexam na mesma ao mesmo tempo — um selo "🔒 Fulano esta revisando" na listagem, e um aviso na tela de detalhe. Veja detalhes na secao [Presenca de revisor](#presenca-de-revisor-tempo-real).
+
 ## Como funciona (arquitetura)
 
 A extensao roda como um content script injetado automaticamente no dominio da Alura. Fluxo:
@@ -29,6 +35,9 @@ A extensao roda como um content script injetado automaticamente no dominio da Al
 5. **Injector** (`src/content/injector.js`) injeta badges visuais no DOM ao lado de cada card.
 6. **Popup** (`popup/`) le o storage e exibe lista filtrable/ordenavel.
 7. **Service Worker** (`background/service-worker.js`) mantem contadores e atualiza badge do icone.
+8. **Detail parser** (`src/content/detail-parser.js`) le a tela de detalhe (textareas `.original`/`.changed`) para reavaliar a triagem com o texto completo (`src/detail-page.js`).
+9. **Respostas rapidas** (`src/content/reply-buttons.js`) injeta o painel de respostas prontas na tela de detalhe.
+10. **Presenca** (`src/common/presence.js`) fala com a REST API do Firebase Realtime Database para anunciar e consultar quem esta revisando cada sugestao (ver secao dedicada abaixo).
 
 ### Estrutura de arquivos
 
@@ -41,19 +50,26 @@ popup/
   popup.js                          # Logica do popup (filtros, lista)
   popup.css                         # Estilos do popup
 src/
-  list-page.js                      # Orquestracao: observer -> parser -> triage -> storage -> injector
-  styles.css                        # Estilos dos badges e resumo na pagina
+  list-page.js                      # Orquestracao da listagem: observer -> parser -> triage -> storage -> injector -> presence
+  detail-page.js                    # Orquestracao da tela de detalhe: parser -> triage -> storage -> presence
+  styles.css                        # Estilos dos badges, resumo, respostas rapidas e presenca
   common/
-    selectors.js                    # Seletores CSS da listagem (sourceId, autor, diff, etc.)
+    selectors.js                    # Seletores CSS da listagem e da tela de detalhe (sourceId, autor, diff, etc.)
     spam-detector.js                # Heuristicas de spam (scores, limiares, motivos)
     category-checker.js             # Divergencia entre descricao e categoria
     duplicate-checker.js            # Descricoes identicas (similaridade de Jaccard)
     storage.js                      # Wrapper chrome.storage.local (upsert, getAll, getFiltered)
     triage.js                       # Scoring unificado (pesos: spam 40, categoria 25, duplicata 20, antigo 15)
+    firebase-config.js              # databaseURL do Realtime Database usado para presenca
+    identity.js                     # Nome do revisor (prompt unico) + clientId, via chrome.storage.local
+    presence.js                     # Anuncia/consulta presenca via REST API do Firebase (sem SDK)
   content/
     observer.js                     # MutationObserver isolado com debounce
-    parser.js                       # Extrai modelo Suggestion do DOM
+    parser.js                       # Extrai modelo Suggestion do DOM (listagem)
+    detail-parser.js                # Extrai dados completos da tela de detalhe (textareas, autor, categoria)
     injector.js                     # Injeta badges e resumo no DOM
+    reply-buttons.js                # Painel de respostas rapidas na tela de detalhe
+    presence-badge.js               # Injeta o selo "🔒 Fulano esta revisando" na listagem
 ```
 
 ## Instalar localmente (modo desenvolvedor)
@@ -73,6 +89,20 @@ Apos qualquer alteracao nos arquivos, clique no icone de recarregar (⟳) no car
 - **Popup**: Clique no icone da extensao na barra de ferramentas.
 - **Storage**: No Console da pagina de sugestoes, execute `AluraStorage.getStats()` para ver contagem de sugestoes salvas.
 - **Triagem**: No Console, execute `AluraTriage.triage({ description: "teste", category: null, timestamp: null, duplicateCount: 0 })` para testar.
+
+## Presenca de revisor (tempo real)
+
+Para evitar que duas pessoas revisem a mesma sugestao ao mesmo tempo, a extensao anuncia presenca num projeto compartilhado do Firebase Realtime Database.
+
+- **Sem SDK**: a comunicacao e feita via REST API pura (`fetch`), contra `{databaseURL}/presence/{sourceId}.json` — sem bundler, sem dependencia nova no projeto.
+- **Sinal de vida, nao `onDisconnect`**: quem esta na tela de detalhe grava um timestamp a cada 10s (`HEARTBEAT_MS`). Um registro mais velho que 25s (`STALE_AFTER_MS`) e tratado como se a pessoa tivesse saido — cobre o caso de a aba fechar sem avisar, sem exigir o SDK completo com conexao persistente.
+- **Nome do revisor**: perguntado uma unica vez via `prompt()` na primeira sugestao aberta, guardado em `chrome.storage.local` (`AluraIdentity`). Para trocar o nome salvo, rode no Console da pagina: `chrome.storage.local.remove(['alura_reviewer_name'])`.
+- **Onde aparece**: selo "🔒 Fulano esta revisando" nos cards da listagem (`AluraPresenceBadge`); aviso "⚠️ Fulano ja esta revisando esta sugestao agora" no topo da tela de detalhe (`src/detail-page.js`).
+- **Configuracao do projeto Firebase**: `databaseURL` fica em `src/common/firebase-config.js`. As regras do Realtime Database restringem leitura/escrita ao caminho `presence/`:
+  ```json
+  { "rules": { "presence": { ".read": true, ".write": true } } }
+  ```
+- **host_permissions**: o dominio do Firebase precisa estar em `host_permissions` no `manifest.json` para o `fetch` funcionar a partir do content script.
 
 ## Ajustar a sensibilidade
 
@@ -113,6 +143,7 @@ Para ver logs do content script: F12 → aba Console na pagina de sugestoes.
 
 - **Duplicatas somente na mesma pagina**: a comparacao de similaridade e local — nao cruza dados entre diferentes carregamentos ou paginas.
 - **Categorias parcialmente mapeadas**: apenas "Link quebrado" e "Problema com audio ou video" tem vocabulario suficientemente distinto para deteccao por palavra-chave segura.
-- **Sem diff na listagem**: o diff lado a lado de correcoes ortograficas so esta disponivel na visao de detalhe da Alura; a extensao, por ora, nao o processa.
 - **Atraso de renderizacao**: como depende de `MutationObserver`, pode haver um breve intervalo entre o carregamento dos cards e a injecao dos badges.
 - **Service worker descartavel**: o Chrome descarta o service worker apos ~30s de inatividade. Ele reativa automaticamente ao clicar no popup ou receber uma mensagem.
+- **Presenca com atraso de ate ~25s**: como nao usa `onDisconnect` (exigiria o SDK completo do Firebase), o aviso de "Fulano saiu" so desaparece depois do timeout do sinal de vida — nao e instantaneo.
+- **Regras do Firebase abertas dentro de `presence/`**: qualquer um com a `databaseURL` consegue ler/escrever nesse caminho (sem autenticacao). Aceitavel pois so guarda nome + timestamp, mas nao guarde nada sensivel ali.
