@@ -32,19 +32,29 @@ const AluraTriage = (() => {
    * @param {string|null} params.category - Categoria marcada pelo aluno
    * @param {number|null} params.timestamp - Epoch ms de criação
    * @param {number} params.duplicateCount - Quantas outras sugestões na mesma página têm descrição quase idêntica
+   * @param {{ total: number, additions: number, deletions: number }|null} [params.diffInfo] - Informação de diff visível na listagem
    * @param {number} [params.ageDays] - Idade em dias (opcional, calculado se timestamp disponível)
    * @returns {{ score: number, label: string, flags: string[], breakdown: Object }}
    */
-  function triage({ description, category, timestamp, duplicateCount = 0 }) {
+  function triage({ description, category, timestamp, duplicateCount = 0, diffInfo = null }) {
     const flags = [];
     const breakdown = {};
     let totalScore = 0;
 
-    // 1. Spam
-    const spamResult = AluraSpamDetector.scoreSpam(description);
-    const spamContribution = Math.round((spamResult.score / 100) * WEIGHTS.spam);
+    // 1. Spam (combina texto + diff: usa o maior para que um diff massivo
+    //    sozinho já marque como spam, sem depender da descrição).
+    const textSpam = AluraSpamDetector.scoreSpam(description);
+    const diffSpam = AluraSpamDetector.scoreDiffSpam(diffInfo);
+    const spamScore = Math.max(textSpam.score, diffSpam.score);
+    const spamReasons = [...textSpam.reasons, ...diffSpam.reasons];
+    const spamContribution = Math.round((spamScore / 100) * WEIGHTS.spam);
     if (spamContribution > 0) {
-      breakdown.spam = { raw: spamResult.score, weighted: spamContribution };
+      breakdown.spam = {
+        raw: spamScore,
+        weighted: spamContribution,
+        reasons: spamReasons,
+        diffInfo: diffSpam.score > 0 ? diffInfo : null,
+      };
       totalScore += spamContribution;
       flags.push("spam");
     }

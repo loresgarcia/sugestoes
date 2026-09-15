@@ -6,7 +6,7 @@ Extensao Chrome (Manifest V3) para a area de suporte educacional identificar mai
 
 A extensao observa a listagem de sugestoes e insere badges informativos ao lado de cada card, alem de um resumo geral no topo da lista. Passe o mouse sobre qualquer selo para ver o motivo da sinalizacao.
 
-- **Selo "Possivel spam"**: Analisa a descricao visivel do card e marca quando o texto combina com padroes suspeitos: texto muito curto, frases genericas conhecidas ("teste", "kkkk"), padroes de teclado repetidos ("asdasdasd"), poucas letras distintas para o tamanho do texto, sequencias longas de consoantes, baixa proporcao de vogais, ou uma "palavra" isolada sem sentido no meio de uma frase normal.
+- **Selo "Possivel spam"**: Analisa a descricao visivel do card e marca quando o texto combina com padroes suspeitos: texto muito curto, frases genericas conhecidas ("teste", "kkkk"), padroes de teclado repetidos ("asdasdasd"), poucas letras distintas para o tamanho do texto, sequencias longas de consoantes, baixa proporcao de vogais, ou uma "palavra" isolada sem sentido no meio de uma frase normal. Tambem usa o tamanho do diff do card: remocoes massivas de texto (a partir de 100 caracteres apagados) indicam aluno que apagou o enunciado inteiro e escreveu outra coisa — comportamento tipico de spam.
 
 - **Selo "Categoria pode estar errada"**: Quando a descricao aponta fortemente para um tipo diferente da categoria marcada pelo aluno. No momento, cobre apenas dois padroes de vocabulario distintivos: "Link quebrado" e "Problema com audio ou video".
 
@@ -109,6 +109,9 @@ Para evitar que duas pessoas revisem a mesma sugestao ao mesmo tempo, a extensao
 | Regra | Constante | Arquivo | Padrao | Observacoes |
 |---|---|---|---|---|
 | Spam | `THRESHOLD` | `src/common/spam-detector.js` | 45 | Limiar global. Cada heuristica tem peso interno. |
+| Spam (diff) | `DIFF_DELETION_SUSPECT` | `src/common/spam-detector.js` | 100 | Remocoes acima disso (caracteres apagados) comecam a pontuar como spam. |
+| Spam (diff) | `DIFF_DELETION_MAX` | `src/common/spam-detector.js` | 500 | Remocoes nesse tamanho saturam o score em 100. |
+| Spam (diff) | `DIFF_LOW_ADDITION_RATIO` | `src/common/spam-detector.js` | 0.15 | Se adicionou menos que essa fracao do que removeu, o score sobe para 90+. |
 | Spam (triage) | `WEIGHTS.spam` | `src/common/triage.js` | 40 | Peso do spam no score consolidado (0-100). |
 | Categoria | `LINK_QUEBRADO_PHRASES` / `AUDIO_VIDEO_PHRASES` | `src/common/category-checker.js` | — | Listas de frases-chave. |
 | Categoria (triage) | `WEIGHTS.categoryMismatch` | `src/common/triage.js` | 25 | Peso da categoria no score consolidado. |

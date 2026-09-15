@@ -25,7 +25,10 @@ const AluraInjector = (() => {
   function buildTooltip(flag, breakdown) {
     switch (flag) {
       case "spam": {
-        const reasons = AluraSpamDetector.scoreSpam(breakdown.description || "").reasons;
+        const reasons =
+          breakdown.reasons && breakdown.reasons.length
+            ? breakdown.reasons
+            : AluraSpamDetector.scoreSpam(breakdown.description || "").reasons;
         return reasons.length > 0
           ? reasons.join("; ")
           : "Texto at\u00E9nde padr\u00F5es de spam";

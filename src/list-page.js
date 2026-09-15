@@ -39,6 +39,7 @@
         category: s.tipoNativo,
         timestamp: s.createdAt ? new Date(s.createdAt).getTime() : null,
         duplicateCount: duplicateCounts[i],
+        diffInfo: s.diffInfo,
       });
 
       s.triageScore = result.score;

@@ -6,6 +6,23 @@
 const AluraSpamDetector = (() => {
   const THRESHOLD = 45;
 
+  /**
+   * Limites para a heurística de diff massivo (caracteres alterados na
+   * sugestão). Sugestões legítimas de ortografia costumam alterar 5–20
+   * caracteres; mesmo uma sugestão que mexa em várias partes do texto
+   * raramente passa de ~50. Acima de 100 caracteres removidos normalmente
+   * significa que o aluno apagou o texto inteiro e escreveu uma frase nova —
+   * comportamento de spam.
+   * DIFF_DELETION_SUSPECT: acima dessa quantidade de remoções a sugestão
+   *                        começa a ser punida.
+   * DIFF_DELETION_MAX: quantidade de remoções que satura o score em 100.
+   * DIFF_LOW_ADDITION_RATIO: se o aluno removeu muito e adicionou menos que
+   *                          essa fração do que removeu, o score sobe mais.
+   */
+  const DIFF_DELETION_SUSPECT = 100;
+  const DIFF_DELETION_MAX = 500;
+  const DIFF_LOW_ADDITION_RATIO = 0.15;
+
   const KEYBOARD_MASH_PATTERNS = [
     "asdf", "qwer", "zxcv", "qwerty", "asdasd", "jklç", "kdak", "kska",
   ];
@@ -224,5 +241,43 @@ const AluraSpamDetector = (() => {
     return scoreSpam(rawText).score >= THRESHOLD;
   }
 
-  return { scoreSpam, isLikelySpam, THRESHOLD };
+  /**
+   * Pontua o risco de spam a partir das informações de diff da listagem
+   * ({ total, additions, deletions }). Remoções massivas de texto indicam
+   * que o aluno apagou o conteúdo e substituiu por outra coisa — o padrão
+   * clássico de spam em sugestões de ortografia.
+   * @param {{ total: number, additions: number, deletions: number }|null} diffInfo
+   * @returns {{ score: number, reasons: string[] }}
+   */
+  function scoreDiffSpam(diffInfo) {
+    if (!diffInfo) return { score: 0, reasons: [] };
+
+    const deletions = diffInfo.deletions || 0;
+    const additions = diffInfo.additions || 0;
+    const reasons = [];
+    let score = 0;
+
+    if (deletions >= DIFF_DELETION_SUSPECT) {
+      const capped = Math.min(deletions, DIFF_DELETION_MAX);
+      const progress =
+        (capped - DIFF_DELETION_SUSPECT) /
+        (DIFF_DELETION_MAX - DIFF_DELETION_SUSPECT);
+      score = Math.round(60 + progress * 40);
+      reasons.push(
+        `remoção massiva de texto (${deletions} caracteres apagados)`
+      );
+    }
+
+    if (
+      deletions >= DIFF_DELETION_SUSPECT &&
+      additions <= deletions * DIFF_LOW_ADDITION_RATIO
+    ) {
+      score = Math.max(score, 90);
+      reasons.push("removeu quase todo o texto e adicionou muito pouco");
+    }
+
+    return { score: Math.min(score, 100), reasons };
+  }
+
+  return { scoreSpam, scoreDiffSpam, isLikelySpam, THRESHOLD };
 })();

@@ -94,6 +94,7 @@
       const desc = s.descricao || "";
       const author = s.criadoPor || "Desconhecido";
       const category = s.tipoNativo || "";
+      const diffInfo = s.diffInfo;
 
       let badgesHtml = "";
       (s.flags || []).forEach((flag) => {
@@ -106,12 +107,21 @@
         badgesHtml += `<span class="suggestion-card-badge suggestion-card-badge--${flag}">${labels[flag] || flag}</span>`;
       });
 
+      let diffHtml = "";
+      if (diffInfo) {
+        const total = (diffInfo.total || 0) > 0 ? `+${diffInfo.total}` : String(diffInfo.total);
+        const tooltip = `Caracteres alterados: ${total} (apagados: ${diffInfo.deletions || 0} · adicionados: ${diffInfo.additions || 0})`;
+        const massive = Math.abs(diffInfo.total || 0) >= 100;
+        diffHtml = `<div class="suggestion-card-diff${massive ? " suggestion-card-diff--massive" : ""}" title="${escapeHtml(tooltip)}">${escapeHtml(total)} chars</div>`;
+      }
+
       card.innerHTML = `
         <div class="suggestion-card-header">
           <span class="suggestion-card-title" title="${escapeHtml(title)}">${escapeHtml(title)}</span>
           <span class="suggestion-card-score">${score}/100</span>
         </div>
         <div class="suggestion-card-desc" title="${escapeHtml(desc)}">${escapeHtml(desc)}</div>
+        ${diffHtml}
         <div class="suggestion-card-meta">
           ${badgesHtml}
           <span class="suggestion-card-badge" style="background:#f1f5f9;color:#475569">${escapeHtml(category)}</span>

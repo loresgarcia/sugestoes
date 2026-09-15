@@ -50,6 +50,7 @@
         ? new Date(existing.createdAt).getTime()
         : null,
       duplicateCount: existing ? (existing.duplicateCount || 0) : 0,
+      diffInfo: data.diffInfo,
     });
 
     const suggestion = Object.assign({}, existing || {}, {
@@ -57,6 +58,7 @@
       descricao: data.changedText,
       trechoOriginal: data.originalText,
       trechoSugerido: data.changedText,
+      diffInfo: data.diffInfo,
       tipoNativo: data.category || (existing && existing.tipoNativo) || null,
       criadoPor: data.author || (existing && existing.criadoPor) || null,
       triageScore: triageResult.score,
